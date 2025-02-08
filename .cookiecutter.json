@@ -1,0 +1,13 @@
+{
+  "_checkout": "2021.1.1",
+  "_output_dir": "/home/brooks/Projects",
+  "_repo_dir": "/home/brooks/.cookiecutters/cookiecutter-homeassistant-custom-component",
+  "_template": "gh:oncleben31/cookiecutter-homeassistant-custom-component",
+  "class_name_prefix": "Storj",
+  "domain_name": "storj",
+  "friendly_name": "Storj",
+  "github_user": "bkjohnson",
+  "project_name": "homeassistant-storj-integration",
+  "test_suite": "yes",
+  "version": "0.1.0"
+}
