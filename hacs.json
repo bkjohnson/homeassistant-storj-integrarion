@@ -1,5 +1,5 @@
 {
   "name": "Storj",
   "hacs": "1.6.0",
-  "homeassistant": "0.118.0"
+  "homeassistant": "2025.2.0"
 }
