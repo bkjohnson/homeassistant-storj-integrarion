@@ -1,4 +1,5 @@
 """Constants for Storj."""
+
 # Base component constants
 NAME = "Storj"
 DOMAIN = "storj"
