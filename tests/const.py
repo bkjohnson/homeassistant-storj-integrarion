@@ -1,4 +1,5 @@
 """Constants for Storj tests."""
+
 from custom_components.storj.const import (
     CONF_PASSWORD,
 )
