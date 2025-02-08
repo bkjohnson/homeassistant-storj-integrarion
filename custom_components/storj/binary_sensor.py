@@ -1,4 +1,5 @@
 """Binary sensor platform for Storj."""
+
 from homeassistant.components.binary_sensor import BinarySensorEntity
 
 from .const import BINARY_SENSOR

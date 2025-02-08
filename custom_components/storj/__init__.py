@@ -4,6 +4,7 @@ Custom integration to integrate Storj with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/bkjohnson/homeassistant-storj-integration
 """
+
 import asyncio
 import logging
 from datetime import timedelta
