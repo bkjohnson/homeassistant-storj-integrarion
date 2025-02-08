@@ -1,6 +1,7 @@
 {
   "domain": "storj",
   "name": "Storj",
+  "version": "0.1.0",
   "documentation": "https://github.com/bkjohnson/homeassistant-storj-integration",
   "issue_tracker": "https://github.com/bkjohnson/homeassistant-storj-integration/issues",
   "dependencies": [],
