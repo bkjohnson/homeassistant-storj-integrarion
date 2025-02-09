@@ -3,7 +3,7 @@
   tuple(
     'uplink',
     'cp',
-    'my_backup.tar',
+    'backups/Test_2025-01-01_01.23_45678000.tar',
     'sj://ha-backups',
   )
 # ---

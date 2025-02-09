@@ -88,7 +88,7 @@ async def test_agents_upload(
 
     matcher = path_type(
         mapping={"2": (str,)},
-        replacer=lambda _, match: "my_backup.tar",
+        replacer=lambda data, _: data[data.find("backups") :],
     )
 
     assert resp.status == 201
