@@ -3,11 +3,12 @@
 from collections.abc import AsyncGenerator
 from io import StringIO
 from homeassistant.core import HomeAssistant
+import asyncio
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from homeassistant.setup import async_setup_component
 from homeassistant.components.backup import (
     DOMAIN as BACKUP_DOMAIN,
@@ -87,6 +88,7 @@ async def test_agents_upload(
 ) -> None:
     """Test agent upload backup."""
 
+    asyncio.create_subprocess_exec = AsyncMock()
     assert await async_setup_component(hass, BACKUP_DOMAIN, {})
     client = await hass_client()
 
@@ -107,7 +109,8 @@ async def test_agents_upload(
             data={"file": StringIO("test")},
         )
 
-    # TODO: Find a way to verify that function was called with right args
     assert resp.status == 201
     assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
     assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
+    # TODO: Verify that function was called with right args
+    asyncio.create_subprocess_exec.assert_called_once()
