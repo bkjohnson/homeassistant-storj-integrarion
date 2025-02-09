@@ -50,9 +50,9 @@ class StorjClient:
         #     },
         # }
         _LOGGER.debug(
-            "Uploading backup: %s",
+            "Uploading backup: %s as %s",
+            backup.backup_id,
             suggested_filename(backup),
-            # backup.backup_id,
             # backup_metadata,
         )
 
@@ -62,16 +62,7 @@ class StorjClient:
             "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
         )
         await result.communicate()
-        # await self._api.upload_file(
-        #     backup_metadata,
-        #     open_stream,
-        #     timeout=ClientTimeout(total=_UPLOAD_AND_DOWNLOAD_TIMEOUT),
-        # )
-        # _LOGGER.debug(
-        #     "Uploaded backup: %s to: '%s'",
-        #     backup.backup_id,
-        #     backup_metadata["name"],
-        # )
+        _LOGGER.debug("Uploaded backup: %s to '%s'", backup.backup_id, self.bucket_name)
 
     async def async_list_backups(self) -> list[AgentBackup]:
         """List the backups currently in the bucket."""

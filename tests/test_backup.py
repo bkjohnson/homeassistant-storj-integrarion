@@ -50,16 +50,6 @@ async def setup_integration(
     await hass.async_block_till_done()
 
 
-# @pytest.fixture
-# def mock_api() -> Generator[MagicMock]:
-#     """Return a mocked StorjClient."""
-#     with patch(
-#         "asyncio.create_subprocess_exec"
-#     ) as mock_api_cl:
-#         mock_api = mock_api_cl.return_value
-#         yield mock_api
-
-
 @pytest.fixture(name="mock_config_entry")
 def mock_config_entry() -> MockConfigEntry:
     """Fixture for MockConfigEntry."""
@@ -88,20 +78,16 @@ async def setup_backup_integration(
         yield
 
 
-# @pytest.mark.asyncio
 async def test_agents_upload(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
     caplog: pytest.LogCaptureFixture,
-    # mock_api: MagicMock,
     mock_config_entry: MockConfigEntry,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test agent upload backup."""
-    # mock_api.upload_file = AsyncMock(return_value=None)
 
     assert await async_setup_component(hass, BACKUP_DOMAIN, {})
-    # await hass.async_block_till_done()
     client = await hass_client()
 
     with (
@@ -117,15 +103,11 @@ async def test_agents_upload(
         mocked_open.return_value.read = Mock(side_effect=[b"test", b""])
         fetch_backup.return_value = TEST_AGENT_BACKUP
         resp = await client.post(
-            # f"/api/backup/upload?agent_id={TEST_AGENT_ID}",
             f"/api/backup/upload?agent_id={DOMAIN}.{mock_config_entry.unique_id}",
             data={"file": StringIO("test")},
         )
 
-    # print(mock_api)
+    # TODO: Find a way to verify that function was called with right args
     assert resp.status == 201
     assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
-    # assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
-
-    # mock_api.async_upload_backup.assert_called_once()
-    # assert [tuple(mock_call) for mock_call in mock_api.mock_calls] == snapshot
+    assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
