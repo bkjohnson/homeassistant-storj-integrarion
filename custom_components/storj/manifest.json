@@ -1,16 +1,16 @@
 {
   "domain": "storj",
   "name": "Storj",
-  "version": "0.1.0",
-  "documentation": "https://github.com/bkjohnson/homeassistant-storj-integration",
-  "issue_tracker": "https://github.com/bkjohnson/homeassistant-storj-integration/issues",
   "after_dependencies": ["backup"],
   "codeowners": ["@bkjohnson"],
   "config_flow": true,
   "dependencies": [],
+  "documentation": "https://github.com/bkjohnson/homeassistant-storj-integration",
   "homekit": {},
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/bkjohnson/homeassistant-storj-integration/issues",
   "requirements": [],
   "ssdp": [],
+  "version": "0.1.0",
   "zeroconf": []
 }
