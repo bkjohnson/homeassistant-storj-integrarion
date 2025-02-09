@@ -19,11 +19,6 @@ from homeassistant.components.backup import (
 from custom_components.storj.const import DOMAIN
 import pytest
 
-# from .conftest import CONFIG_ENTRY_TITLE, TEST_AGENT_ID
-
-TEST_ACCESS_GRANT = "123xyz"
-TEST_AGENT_ID = "storj.testuser_domain_com"
-CONFIG_ENTRY_TITLE = "Storj entry title"
 
 TEST_AGENT_BACKUP = AgentBackup(
     addons=[AddonInfo(name="Test", slug="test", version="1.0.0")],
@@ -42,38 +37,19 @@ TEST_AGENT_BACKUP = AgentBackup(
 )
 
 
-async def setup_integration(
-    hass: HomeAssistant, mock_config_entry: MockConfigEntry
-) -> None:
-    """Set up the OneDrive integration for testing."""
-    mock_config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(mock_config_entry.entry_id)
-    await hass.async_block_till_done()
-
-
-@pytest.fixture(name="mock_config_entry")
-def mock_config_entry() -> MockConfigEntry:
-    """Fixture for MockConfigEntry."""
-    return MockConfigEntry(
-        domain=DOMAIN,
-        unique_id=TEST_ACCESS_GRANT,
-        title=CONFIG_ENTRY_TITLE,
-        data={"access_grant": TEST_ACCESS_GRANT, "bucket_name": "ha-backups"},
-    )
-
-
 @pytest.fixture(autouse=True)
 async def setup_backup_integration(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
 ) -> AsyncGenerator[None]:
-    """Set up onedrive integration."""
+    """Set up Storj integration."""
     with (
         patch("homeassistant.components.backup.is_hassio", return_value=False),
         patch("homeassistant.components.backup.store.STORE_DELAY_SAVE", 0),
     ):
         assert await async_setup_component(hass, BACKUP_DOMAIN, {BACKUP_DOMAIN: {}})
-        await setup_integration(hass, mock_config_entry)
+        mock_config_entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
 
         await hass.async_block_till_done()
         yield
