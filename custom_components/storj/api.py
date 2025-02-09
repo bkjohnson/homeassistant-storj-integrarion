@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Coroutine
 import logging
-from typing import Any
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
 
@@ -35,7 +33,6 @@ class StorjClient:
 
     async def async_upload_backup(
         self,
-        open_stream: Callable[[], Coroutine[Any, Any, AsyncIterator[bytes]]],
         backup_dir: str,
         backup: AgentBackup,
     ) -> None:
