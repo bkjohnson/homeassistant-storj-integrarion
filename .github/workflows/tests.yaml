@@ -29,5 +29,4 @@ jobs:
             --durations=10 \
             --cov-fail-under=35 \
             -n auto \
-            # -p no:sugar \
             tests
