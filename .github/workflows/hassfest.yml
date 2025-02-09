@@ -1,0 +1,17 @@
+name: Validate with hassfest
+# https://developers.home-assistant.io/blog/2020/04/16/hassfest/
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  hassfest:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4.2.2"
+      - uses: home-assistant/actions/hassfest@master
