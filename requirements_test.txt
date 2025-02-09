@@ -1,5 +1,2 @@
 homeassistant
 pytest-homeassistant-custom-component==0.13.211
-pytest-socket==0.7.0
-pytest-asyncio==0.24.0
-pytest-aiohttp==1.0.5
