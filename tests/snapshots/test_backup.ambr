@@ -1,0 +1,9 @@
+# serializer version: 1
+# name: test_agents_upload
+  tuple(
+    'uplink',
+    'cp',
+    'my_backup.tar',
+    'sj://ha-backups',
+  )
+# ---

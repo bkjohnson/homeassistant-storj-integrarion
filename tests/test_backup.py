@@ -8,6 +8,7 @@ import asyncio
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
+from syrupy.matchers import path_type
 from unittest.mock import Mock, AsyncMock, patch
 from homeassistant.setup import async_setup_component
 from homeassistant.components.backup import (
@@ -85,8 +86,15 @@ async def test_agents_upload(
             data={"file": StringIO("test")},
         )
 
+    matcher = path_type(
+        mapping={"2": (str,)},
+        replacer=lambda _, match: "my_backup.tar",
+    )
+
     assert resp.status == 201
     assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
     assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
-    # TODO: Verify that function was called with right args
     asyncio.create_subprocess_exec.assert_called_once()
+    assert (
+        snapshot(matcher=matcher) == asyncio.create_subprocess_exec.mock_calls[0].args
+    )
