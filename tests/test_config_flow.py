@@ -3,8 +3,8 @@
 from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries
-from .components.storj.config_flow import CannotConnect, InvalidAuth
-from .components.storj.const import DOMAIN
+from custom_components.storj.config_flow import CannotConnect, InvalidAuth
+from custom_components.storj.const import DOMAIN
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -19,7 +19,7 @@ async def test_form(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     assert result["errors"] == {}
 
     with patch(
-        "homeassistant.components.storj.config_flow.PlaceholderHub.authenticate",
+        "custom_components.storj.api.StorjClient.authenticate",
         return_value=True,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -51,7 +51,7 @@ async def test_form_invalid_auth(
     )
 
     with patch(
-        "homeassistant.components.storj.config_flow.PlaceholderHub.authenticate",
+        "custom_components.storj.config_flow.PlaceholderHub.authenticate",
         side_effect=InvalidAuth,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -70,7 +70,7 @@ async def test_form_invalid_auth(
     # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so
     # we can show the config flow is able to recover from an error.
     with patch(
-        "homeassistant.components.storj.config_flow.PlaceholderHub.authenticate",
+        "custom_components.storj.config_flow.PlaceholderHub.authenticate",
         return_value=True,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -102,7 +102,7 @@ async def test_form_cannot_connect(
     )
 
     with patch(
-        "homeassistant.components.storj.config_flow.PlaceholderHub.authenticate",
+        "custom_components.storj.config_flow.PlaceholderHub.authenticate",
         side_effect=CannotConnect,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -122,7 +122,7 @@ async def test_form_cannot_connect(
     # we can show the config flow is able to recover from an error.
 
     with patch(
-        "homeassistant.components.storj.config_flow.PlaceholderHub.authenticate",
+        "custom_components.storj.config_flow.PlaceholderHub.authenticate",
         return_value=True,
     ):
         result = await hass.config_entries.flow.async_configure(
