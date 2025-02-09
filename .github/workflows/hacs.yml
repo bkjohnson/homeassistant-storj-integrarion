@@ -1,4 +1,5 @@
 name: Validate for HACS
+# https://www.hacs.xyz/docs/publish/action/
 
 on:
   push:
