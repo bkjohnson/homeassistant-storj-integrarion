@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable, Coroutine
 import logging
 from typing import Any
+from pathlib import Path
 
 from homeassistant.components.backup import AgentBackup, BackupAgent, BackupAgentError
 from homeassistant.core import HomeAssistant, callback
@@ -22,7 +23,7 @@ async def async_get_backup_agents(
 ) -> list[BackupAgent]:
     """Return a list of backup agents."""
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
-    return [StorjBackupAgent(entry) for entry in entries]
+    return [StorjBackupAgent(hass, entry) for entry in entries]
 
 
 @callback
@@ -52,12 +53,14 @@ class StorjBackupAgent(BackupAgent):
 
     domain = DOMAIN
 
-    def __init__(self, config_entry: StorjConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: StorjConfigEntry) -> None:
         """Initialize the cloud backup sync agent."""
         super().__init__()
         assert config_entry.unique_id
+        self.hass = hass
         self.name = config_entry.title
         self.unique_id = config_entry.unique_id
+        self._backup_dir = Path(hass.config.path("backups"))
         self._client = config_entry.runtime_data
 
     async def async_upload_backup(
@@ -72,7 +75,9 @@ class StorjBackupAgent(BackupAgent):
         :param backup: Metadata about the backup that should be uploaded.
         """
         try:
-            await self._client.async_upload_backup(open_stream, backup)
+            await self._client.async_upload_backup(
+                open_stream, self._backup_dir, backup
+            )
         except (HomeAssistantError, TimeoutError) as err:
             raise BackupAgentError(f"Failed to upload backup: {err}") from err
 

@@ -30,7 +30,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     """Validate the user input allows us to connect.
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
-    client = StorjClient(await instance_id.async_get(hass))
+    client = StorjClient(await instance_id.async_get(hass), data[CONF_BUCKET_NAME])
 
     if not await client.authenticate(data[CONF_ACCESS_GRANT]):
         raise InvalidAuth

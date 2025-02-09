@@ -10,7 +10,7 @@ from homeassistant.helpers import instance_id
 from homeassistant.util.hass_dict import HassKey
 
 from .api import StorjClient
-from .const import DOMAIN
+from .const import DOMAIN, CONF_BUCKET_NAME
 
 type StorjConfigEntry = ConfigEntry[StorjClient]
 
@@ -26,7 +26,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: StorjConfigEntry) -> boo
     # TODO 2. Validate the API connection (and authentication)
     # TODO 3. Store an API object for your platforms to access
 
-    entry.runtime_data = StorjClient(await instance_id.async_get(hass))
+    entry.runtime_data = StorjClient(
+        await instance_id.async_get(hass), entry.data[CONF_BUCKET_NAME]
+    )
 
     return True
 

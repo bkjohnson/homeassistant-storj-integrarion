@@ -18,9 +18,11 @@ class StorjClient:
     def __init__(
         self,
         ha_instance_id: str,
+        bucket_name: str,
     ) -> None:
         """Initialize."""
         self._ha_instance_id = ha_instance_id
+        self.bucket_name = bucket_name
         # self.satellite = satellite
 
     async def authenticate(self, access_grant: str) -> bool:
@@ -34,6 +36,7 @@ class StorjClient:
     async def async_upload_backup(
         self,
         open_stream: Callable[[], Coroutine[Any, Any, AsyncIterator[bytes]]],
+        backup_dir: str,
         backup: AgentBackup,
     ) -> None:
         """Upload a backup."""
@@ -52,6 +55,13 @@ class StorjClient:
             # backup.backup_id,
             # backup_metadata,
         )
+
+        # TODO: Add metadata,
+        backup_location = f"{backup_dir}/{suggested_filename(backup)}"
+        result = await asyncio.create_subprocess_exec(
+            "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
+        )
+        await result.communicate()
         # await self._api.upload_file(
         #     backup_metadata,
         #     open_stream,
