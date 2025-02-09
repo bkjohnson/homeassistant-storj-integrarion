@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Coroutine
 import logging
-from typing import Any
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
+from homeassistant.exceptions import HomeAssistantError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,9 +17,11 @@ class StorjClient:
     def __init__(
         self,
         ha_instance_id: str,
+        bucket_name: str,
     ) -> None:
         """Initialize."""
         self._ha_instance_id = ha_instance_id
+        self.bucket_name = bucket_name
         # self.satellite = satellite
 
     async def authenticate(self, access_grant: str) -> bool:
@@ -33,7 +34,7 @@ class StorjClient:
 
     async def async_upload_backup(
         self,
-        open_stream: Callable[[], Coroutine[Any, Any, AsyncIterator[bytes]]],
+        backup_dir: str,
         backup: AgentBackup,
     ) -> None:
         """Upload a backup."""
@@ -47,21 +48,22 @@ class StorjClient:
         #     },
         # }
         _LOGGER.debug(
-            "Uploading backup: %s",
+            "Uploading backup: %s as %s",
+            backup.backup_id,
             suggested_filename(backup),
-            # backup.backup_id,
             # backup_metadata,
         )
-        # await self._api.upload_file(
-        #     backup_metadata,
-        #     open_stream,
-        #     timeout=ClientTimeout(total=_UPLOAD_AND_DOWNLOAD_TIMEOUT),
-        # )
-        # _LOGGER.debug(
-        #     "Uploaded backup: %s to: '%s'",
-        #     backup.backup_id,
-        #     backup_metadata["name"],
-        # )
+
+        # TODO: Add metadata,
+        backup_location = f"{backup_dir}/{suggested_filename(backup)}"
+        result = await asyncio.create_subprocess_exec(
+            "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
+        )
+        await result.communicate()
+        if result.returncode != 0:
+            raise UplinkError("Unable to complete upload")
+
+        _LOGGER.debug("Uploaded backup: %s to '%s'", backup.backup_id, self.bucket_name)
 
     async def async_list_backups(self) -> list[AgentBackup]:
         """List the backups currently in the bucket."""
@@ -92,3 +94,7 @@ class StorjClient:
     async def async_download_backup(self) -> None:
         """Download a backup to the local system."""
         _LOGGER.debug("TODO")
+
+
+class UplinkError(HomeAssistantError):
+    """Error to indicate there is a problem calling uplink."""

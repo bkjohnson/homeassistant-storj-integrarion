@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable, Coroutine
+from collections.abc import AsyncIterator, Callable
 import logging
 from typing import Any
+from pathlib import Path
 
 from homeassistant.components.backup import AgentBackup, BackupAgent, BackupAgentError
 from homeassistant.core import HomeAssistant, callback
@@ -12,6 +13,7 @@ from homeassistant.exceptions import HomeAssistantError
 
 from . import DATA_BACKUP_AGENT_LISTENERS, StorjConfigEntry
 from .const import DOMAIN
+from .api import UplinkError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ async def async_get_backup_agents(
 ) -> list[BackupAgent]:
     """Return a list of backup agents."""
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
-    return [StorjBackupAgent(entry) for entry in entries]
+    return [StorjBackupAgent(hass, entry) for entry in entries]
 
 
 @callback
@@ -52,28 +54,28 @@ class StorjBackupAgent(BackupAgent):
 
     domain = DOMAIN
 
-    def __init__(self, config_entry: StorjConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: StorjConfigEntry) -> None:
         """Initialize the cloud backup sync agent."""
         super().__init__()
         assert config_entry.unique_id
+        self.hass = hass
         self.name = config_entry.title
         self.unique_id = config_entry.unique_id
+        self._backup_dir = Path(hass.config.path("backups"))
         self._client = config_entry.runtime_data
 
     async def async_upload_backup(
         self,
         *,
-        open_stream: Callable[[], Coroutine[Any, Any, AsyncIterator[bytes]]],
         backup: AgentBackup,
         **kwargs: Any,
     ) -> None:
         """Upload a backup.
-        :param open_stream: A function returning an async iterator that yields bytes.
         :param backup: Metadata about the backup that should be uploaded.
         """
         try:
-            await self._client.async_upload_backup(open_stream, backup)
-        except (HomeAssistantError, TimeoutError) as err:
+            await self._client.async_upload_backup(self._backup_dir, backup)
+        except (UplinkError, HomeAssistantError, TimeoutError) as err:
             raise BackupAgentError(f"Failed to upload backup: {err}") from err
 
     async def async_list_backups(self, **kwargs: Any) -> list[AgentBackup]:
