@@ -3,13 +3,12 @@
 from collections.abc import AsyncGenerator
 from io import StringIO
 from homeassistant.core import HomeAssistant
-import asyncio
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
 from syrupy.matchers import path_type
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, patch
 from homeassistant.setup import async_setup_component
 from homeassistant.components.backup import (
     DOMAIN as BACKUP_DOMAIN,
@@ -18,6 +17,7 @@ from homeassistant.components.backup import (
 )
 
 from custom_components.storj.const import DOMAIN
+from .conftest import mock_asyncio_subprocess_run
 import pytest
 
 
@@ -65,7 +65,6 @@ async def test_agents_upload(
 ) -> None:
     """Test agent upload backup."""
 
-    asyncio.create_subprocess_exec = AsyncMock()
     assert await async_setup_component(hass, BACKUP_DOMAIN, {})
     client = await hass_client()
 
@@ -78,7 +77,9 @@ async def test_agents_upload(
             return_value=TEST_AGENT_BACKUP,
         ),
         patch("pathlib.Path.open") as mocked_open,
+        mock_asyncio_subprocess_run(returncode=0) as subprocess_exec,
     ):
+
         mocked_open.return_value.read = Mock(side_effect=[b"test", b""])
         fetch_backup.return_value = TEST_AGENT_BACKUP
         resp = await client.post(
@@ -86,15 +87,50 @@ async def test_agents_upload(
             data={"file": StringIO("test")},
         )
 
-    matcher = path_type(
-        mapping={"2": (str,)},
-        replacer=lambda data, _: data[data.find("backups") :],
-    )
+        matcher = path_type(
+            mapping={"2": (str,)},
+            replacer=lambda data, _: data[data.find("backups") :],
+        )
 
-    assert resp.status == 201
-    assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
-    assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
-    asyncio.create_subprocess_exec.assert_called_once()
-    assert (
-        snapshot(matcher=matcher) == asyncio.create_subprocess_exec.mock_calls[0].args
-    )
+        assert resp.status == 201
+        assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
+        assert f"Uploaded backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
+        subprocess_exec.assert_called_once()
+        assert snapshot(matcher=matcher) == subprocess_exec.mock_calls[0].args
+
+
+async def test_agents_upload_fail(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    caplog: pytest.LogCaptureFixture,
+    mock_config_entry: MockConfigEntry,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test agent upload backup fails."""
+
+    assert await async_setup_component(hass, BACKUP_DOMAIN, {})
+    client = await hass_client()
+
+    with (
+        patch(
+            "homeassistant.components.backup.manager.BackupManager.async_get_backup",
+        ) as fetch_backup,
+        patch(
+            "homeassistant.components.backup.manager.read_backup",
+            return_value=TEST_AGENT_BACKUP,
+        ),
+        patch("pathlib.Path.open") as mocked_open,
+        mock_asyncio_subprocess_run(returncode=1) as subprocess_exec,
+    ):
+
+        mocked_open.return_value.read = Mock(side_effect=[b"test", b""])
+        fetch_backup.return_value = TEST_AGENT_BACKUP
+        resp = await client.post(
+            f"/api/backup/upload?agent_id={DOMAIN}.{mock_config_entry.unique_id}",
+            data={"file": StringIO("test")},
+        )
+
+        assert resp.status == 201
+        assert f"Uploading backup: {TEST_AGENT_BACKUP.backup_id}" in caplog.text
+        subprocess_exec.assert_called_once()
+        assert "Failed to upload backup: Unable to complete upload" in caplog.text

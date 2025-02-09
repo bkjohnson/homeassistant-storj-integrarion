@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
+from homeassistant.exceptions import HomeAssistantError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,6 +60,9 @@ class StorjClient:
             "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
         )
         await result.communicate()
+        if result.returncode != 0:
+            raise UplinkError("Unable to complete upload")
+
         _LOGGER.debug("Uploaded backup: %s to '%s'", backup.backup_id, self.bucket_name)
 
     async def async_list_backups(self) -> list[AgentBackup]:
@@ -90,3 +94,7 @@ class StorjClient:
     async def async_download_backup(self) -> None:
         """Download a backup to the local system."""
         _LOGGER.debug("TODO")
+
+
+class UplinkError(HomeAssistantError):
+    """Error to indicate there is a problem calling uplink."""

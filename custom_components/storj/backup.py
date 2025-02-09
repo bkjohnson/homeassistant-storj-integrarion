@@ -13,6 +13,7 @@ from homeassistant.exceptions import HomeAssistantError
 
 from . import DATA_BACKUP_AGENT_LISTENERS, StorjConfigEntry
 from .const import DOMAIN
+from .api import UplinkError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class StorjBackupAgent(BackupAgent):
         """
         try:
             await self._client.async_upload_backup(self._backup_dir, backup)
-        except (HomeAssistantError, TimeoutError) as err:
+        except (UplinkError, HomeAssistantError, TimeoutError) as err:
             raise BackupAgentError(f"Failed to upload backup: {err}") from err
 
     async def async_list_backups(self, **kwargs: Any) -> list[AgentBackup]:
