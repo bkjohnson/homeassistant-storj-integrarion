@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import json
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
 from homeassistant.exceptions import HomeAssistantError
+
+from json_flatten import flatten
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,26 +41,23 @@ class StorjClient:
         backup: AgentBackup,
     ) -> None:
         """Upload a backup."""
-        # backup_metadata = {
-        #     "name": suggested_filename(backup),
-        #     "description": json.dumps(backup.as_dict()),
-        #     "properties": {
-        #         "home_assistant": "backup",
-        #         "instance_id": self._ha_instance_id,
-        #         "backup_id": backup.backup_id,
-        #     },
-        # }
+
+        backup_metadata = flatten(backup.as_dict())
         _LOGGER.debug(
-            "Uploading backup: %s as %s",
+            "Uploading backup: %s as %s with metadata: %s",
             backup.backup_id,
             suggested_filename(backup),
-            # backup_metadata,
+            backup_metadata,
         )
 
-        # TODO: Add metadata,
         backup_location = f"{backup_dir}/{suggested_filename(backup)}"
         result = await asyncio.create_subprocess_exec(
-            "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
+            "uplink",
+            "cp",
+            backup_location,
+            f"sj://{self.bucket_name}",
+            "--metadata",
+            json.dumps(backup_metadata),
         )
         await result.communicate()
         if result.returncode != 0:
