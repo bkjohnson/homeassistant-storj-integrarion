@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
 from homeassistant.exceptions import HomeAssistantError
@@ -34,7 +35,7 @@ class StorjClient:
 
     async def async_upload_backup(
         self,
-        backup_dir: str,
+        backup_path: Path,
         backup: AgentBackup,
     ) -> None:
         """Upload a backup."""
@@ -55,7 +56,7 @@ class StorjClient:
         )
 
         # TODO: Add metadata,
-        backup_location = f"{backup_dir}/{suggested_filename(backup)}"
+        backup_location = str(backup_path.joinpath(suggested_filename(backup)))
         result = await asyncio.create_subprocess_exec(
             "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
         )

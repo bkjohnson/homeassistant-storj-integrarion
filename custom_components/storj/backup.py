@@ -61,7 +61,7 @@ class StorjBackupAgent(BackupAgent):
         self.hass = hass
         self.name = config_entry.title
         self.unique_id = config_entry.unique_id
-        self._backup_dir = Path(hass.config.path("backups"))
+        self._backup_path = Path(hass.config.path("backups"))
         self._client = config_entry.runtime_data
 
     async def async_upload_backup(
@@ -74,7 +74,7 @@ class StorjBackupAgent(BackupAgent):
         :param backup: Metadata about the backup that should be uploaded.
         """
         try:
-            await self._client.async_upload_backup(self._backup_dir, backup)
+            await self._client.async_upload_backup(self._backup_path, backup)
         except (UplinkError, HomeAssistantError, TimeoutError) as err:
             raise BackupAgentError(f"Failed to upload backup: {err}") from err
 
