@@ -55,7 +55,7 @@ class StorjClient:
             "uplink",
             "cp",
             backup_location,
-            f"sj://{self.bucket_name}",
+            f"sj://{self.bucket_name}/backups/",
             "--metadata",
             json.dumps(backup_metadata),
         )
