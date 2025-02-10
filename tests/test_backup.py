@@ -186,3 +186,24 @@ async def test_agents_list_backups(
         assert snapshot() == subprocess_exec.mock_calls[0].args
         assert snapshot() == subprocess_exec.mock_calls[1].args
         # assert [tuple(mock_call) for mock_call in mock_api.mock_calls] == snapshot
+
+
+async def test_agents_list_backups_fail(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Test agent list backups fails."""
+
+    with mock_asyncio_subprocess_run(
+        responses=iter([b""]), returncode=1
+    ) as subprocess_exec:
+        client = await hass_ws_client(hass)
+        await client.send_json_auto_id({"type": "backup/info"})
+        response = await client.receive_json()
+
+        assert response["success"]
+        assert response["result"]["backups"] == []
+        assert response["result"]["agent_errors"] == {
+            TEST_AGENT_ID: "Failed to list backups: Unable to fetch backup data"
+        }
+        assert subprocess_exec.called

@@ -89,6 +89,9 @@ class StorjClient:
             stdout=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await result.communicate()
+        if result.returncode != 0:
+            raise UplinkError("Unable to fetch backup data")
+
         storj_objs = [json.loads(ob) for ob in stdout.decode().split("\n") if ob]
 
         backups: list[AgentBackup] = []
