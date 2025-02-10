@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from io import StringIO
 from homeassistant.core import HomeAssistant
 
+from typing import Any
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import (
     ClientSessionGenerator,
@@ -206,4 +207,44 @@ async def test_agents_list_backups_fail(
         assert response["result"]["agent_errors"] == {
             TEST_AGENT_ID: "Failed to list backups: Unable to fetch backup data"
         }
+        assert subprocess_exec.called
+
+
+@pytest.mark.parametrize(
+    ("backup_id", "expected_result"),
+    [
+        (TEST_AGENT_BACKUP.backup_id, TEST_AGENT_BACKUP_RESULT),
+        ("12345", None),
+    ],
+    ids=["found", "not_found"],
+)
+async def test_agents_get_backup(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    backup_id: str,
+    expected_result: dict[str, Any] | None,
+) -> None:
+    """Test agent get backup."""
+
+    flattened_metadata = json.dumps(flatten(TEST_AGENT_BACKUP.as_dict())).encode(
+        "utf-8"
+    )
+
+    responses = iter(
+        [
+            b'{"kind":"OBJ","created":"2025-02-09 20:02:19","size":12,"key":"backup.tar"}',
+            flattened_metadata,
+        ]
+    )
+
+    with mock_asyncio_subprocess_run(responses=responses) as subprocess_exec:
+        client = await hass_ws_client(hass)
+        await client.send_json_auto_id(
+            {"type": "backup/details", "backup_id": backup_id}
+        )
+        response = await client.receive_json()
+
+        assert response["success"]
+        assert response["result"]["agent_errors"] == {}
+        assert response["result"]["backup"] == expected_result
         assert subprocess_exec.called
