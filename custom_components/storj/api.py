@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
+from icmplib import async_ping
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
 from homeassistant.exceptions import HomeAssistantError
 
 from json_flatten import flatten, unflatten
+from .exceptions import CannotConnect
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +35,33 @@ class StorjClient:
             "uplink", "access", "import", "ha2", access_grant
         )
         await result.communicate()
+
+        is_live = await self._satelitte_is_live()
+        if not is_live:
+            raise CannotConnect("Satelitte is not reachable")
+
         return result.returncode == 0
+
+    async def _satelitte_is_live(self) -> bool:
+        """Check to see if the satellite contained in the access grant is reachable."""
+
+        result = await asyncio.create_subprocess_exec(
+            "uplink",
+            "access",
+            "inspect",
+            "ha2",
+            stdout=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await result.communicate()
+        json_access = json.loads(stdout.decode())
+        url = json_access["satellite_addr"].split("@")[-1]
+        # We don't want the port
+        host = url.split(":")[0]
+
+        _LOGGER.debug("Checking to see if Storj satellite %s can be reached", host)
+        host = await async_ping(host, privileged=False)
+
+        return host.is_alive
 
     async def async_upload_backup(
         self,

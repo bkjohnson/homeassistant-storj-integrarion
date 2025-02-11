@@ -1,10 +1,23 @@
 # serializer version: 1
 # name: test_form
+  list([
+    tuple(
+      'uplink',
+      'access',
+      'import',
+      'ha2',
+      'abc123xyz',
+    ),
+    tuple(
+      'uplink',
+      'access',
+      'inspect',
+      'ha2',
+    ),
+  ])
+# ---
+# name: test_form.1
   tuple(
-    'uplink',
-    'access',
-    'import',
-    'ha2',
-    'abc123xyz',
+    'my.storj-satellite.io',
   )
 # ---
