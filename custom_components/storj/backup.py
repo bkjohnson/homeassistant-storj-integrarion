@@ -119,4 +119,6 @@ class StorjBackupAgent(BackupAgent):
         :param backup_id: The ID of the backup that was returned in async_list_backups.
         """
         _LOGGER.debug("Deleting backup_id: %s", backup_id)
-        # file_id = await self._client.async_get_backup_file_id(backup_id)
+        backup = await self.async_get_backup(backup_id)
+
+        await self._client.async_delete_backup(backup)
