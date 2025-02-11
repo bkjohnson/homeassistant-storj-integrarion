@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import json
 
 from homeassistant.components.backup import AgentBackup, suggested_filename
 from homeassistant.exceptions import HomeAssistantError
+
+from json_flatten import flatten, unflatten
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,26 +41,23 @@ class StorjClient:
         backup: AgentBackup,
     ) -> None:
         """Upload a backup."""
-        # backup_metadata = {
-        #     "name": suggested_filename(backup),
-        #     "description": json.dumps(backup.as_dict()),
-        #     "properties": {
-        #         "home_assistant": "backup",
-        #         "instance_id": self._ha_instance_id,
-        #         "backup_id": backup.backup_id,
-        #     },
-        # }
+
+        backup_metadata = flatten(backup.as_dict())
         _LOGGER.debug(
-            "Uploading backup: %s as %s",
+            "Uploading backup: %s as %s with metadata: %s",
             backup.backup_id,
             suggested_filename(backup),
-            # backup_metadata,
+            backup_metadata,
         )
 
-        # TODO: Add metadata,
         backup_location = f"{backup_dir}/{suggested_filename(backup)}"
         result = await asyncio.create_subprocess_exec(
-            "uplink", "cp", backup_location, f"sj://{self.bucket_name}"
+            "uplink",
+            "cp",
+            backup_location,
+            f"sj://{self.bucket_name}/backups/",
+            "--metadata",
+            json.dumps(backup_metadata),
         )
         await result.communicate()
         if result.returncode != 0:
@@ -65,27 +65,44 @@ class StorjClient:
 
         _LOGGER.debug("Uploaded backup: %s to '%s'", backup.backup_id, self.bucket_name)
 
+    async def _get_metadata(self, filename: str) -> dict[str, str]:
+        result = await asyncio.create_subprocess_exec(
+            "uplink",
+            "meta",
+            "get",
+            f"sj://{self.bucket_name}/backups/{filename}",
+            stdout=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await result.communicate()
+
+        return json.loads(stdout.decode())
+
     async def async_list_backups(self) -> list[AgentBackup]:
         """List the backups currently in the bucket."""
-        # query = " and ".join(
-        #     [
-        #         "properties has { key='home_assistant' and value='backup' }",
-        #         f"properties has {{ key='instance_id' and value='{self._ha_instance_id}' }}",
-        #         "trashed=false",
-        #     ]
-        # )
-        # res = await self._api.list_files(
-        #     params={"q": query, "fields": "files(description)"}
-        # )
-        backups: list[AgentBackup] = []
-        # for file in res["files"]:
-        #     backup = AgentBackup.from_dict(json.loads(file["description"]))
-        #     backups.append(backup)
-        return backups
 
-    # async def async_list_backups(self) -> None:
-    #     """List the backups currently in the bucket."""
-    #     _LOGGER.debug("TODO")
+        result = await asyncio.create_subprocess_exec(
+            "uplink",
+            "ls",
+            f"sj://{self.bucket_name}/backups/",
+            "--o",
+            "json",
+            stdout=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await result.communicate()
+        if result.returncode != 0:
+            raise UplinkError("Unable to fetch backup data")
+
+        storj_objs = [json.loads(ob) for ob in stdout.decode().split("\n") if ob]
+
+        backups: list[AgentBackup] = []
+        for ob in storj_objs:
+            metadata = await self._get_metadata(ob["key"])
+            metadata_dict = unflatten(metadata)
+            if "homeassistant_version" in metadata_dict.keys():
+                backup = AgentBackup.from_dict(metadata_dict)
+                backups.append(backup)
+
+        return backups
 
     async def async_delete_backup(self) -> None:
         """Delete a specified backup from the bucket."""

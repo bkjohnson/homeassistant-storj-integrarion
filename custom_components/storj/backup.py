@@ -82,7 +82,7 @@ class StorjBackupAgent(BackupAgent):
         """List backups."""
         try:
             return await self._client.async_list_backups()
-        except (HomeAssistantError, TimeoutError) as err:
+        except (UplinkError, HomeAssistantError, TimeoutError) as err:
             raise BackupAgentError(f"Failed to list backups: {err}") from err
 
     async def async_get_backup(
