@@ -5,11 +5,16 @@ from unittest.mock import AsyncMock, patch
 from homeassistant import config_entries
 from custom_components.storj.config_flow import CannotConnect, InvalidAuth
 from custom_components.storj.const import DOMAIN, CONF_ACCESS_GRANT, CONF_BUCKET_NAME
+from syrupy.assertion import SnapshotAssertion
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
+from .conftest import mock_asyncio_subprocess_run
 
-async def test_form(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
+
+async def test_form(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock, snapshot: SnapshotAssertion
+) -> None:
     """Test we get the form."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -17,10 +22,7 @@ async def test_form(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {}
 
-    with patch(
-        "custom_components.storj.api.StorjClient.authenticate",
-        return_value=True,
-    ):
+    with mock_asyncio_subprocess_run(responses=iter([b""])) as subprocess_exec:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
@@ -29,6 +31,7 @@ async def test_form(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
             },
         )
         await hass.async_block_till_done()
+        assert snapshot() == subprocess_exec.mock_calls[0].args
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Storj"

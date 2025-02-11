@@ -1,0 +1,10 @@
+# serializer version: 1
+# name: test_form
+  tuple(
+    'uplink',
+    'access',
+    'import',
+    'ha2',
+    'abc123xyz',
+  )
+# ---
