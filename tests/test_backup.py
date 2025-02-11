@@ -184,9 +184,7 @@ async def test_agents_list_backups(
         assert response["success"]
         assert response["result"]["agent_errors"] == {}
         assert response["result"]["backups"] == [TEST_AGENT_BACKUP_RESULT]
-        assert snapshot() == subprocess_exec.mock_calls[0].args
-        assert snapshot() == subprocess_exec.mock_calls[1].args
-        # assert [tuple(mock_call) for mock_call in mock_api.mock_calls] == snapshot
+        assert [mock_call.args for mock_call in subprocess_exec.mock_calls] == snapshot
 
 
 async def test_agents_list_backups_fail(
