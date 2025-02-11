@@ -104,9 +104,17 @@ class StorjClient:
 
         return backups
 
-    async def async_delete_backup(self) -> None:
+    async def async_delete_backup(self, backup: AgentBackup) -> None:
         """Delete a specified backup from the bucket."""
-        _LOGGER.debug("TODO")
+
+        result = await asyncio.create_subprocess_exec(
+            "uplink",
+            "rm",
+            f"sj://{self.bucket_name}/backups/{suggested_filename(backup)}",
+        )
+        await result.communicate()
+        if result.returncode != 0:
+            raise UplinkError("Unable to delete backup")
 
     async def async_download_backup(self) -> None:
         """Download a backup to the local system."""
