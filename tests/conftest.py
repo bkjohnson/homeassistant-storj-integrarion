@@ -21,6 +21,7 @@ from homeassistant.components.websocket_api.auth import (
     TYPE_AUTH_OK,
     TYPE_AUTH_REQUIRED,
 )
+from typing import Iterable
 
 import asyncio
 
@@ -115,7 +116,7 @@ def hass_ws_client(
 @contextmanager
 def mock_asyncio_subprocess_run(
     responses: bytes = iter([b""]),
-    returncode: int = 0,
+    returncode: int | Iterable = 0,
     exception: Exception | None = None,
 ):
     """Mock create_subprocess_shell."""
@@ -123,7 +124,9 @@ def mock_asyncio_subprocess_run(
     class MockProcess(asyncio.subprocess.Process):
         @property
         def returncode(self):
-            return returncode
+            if isinstance(returncode, int):
+                return returncode
+            return returncode.__next__()
 
         async def communicate(self):
             if exception:

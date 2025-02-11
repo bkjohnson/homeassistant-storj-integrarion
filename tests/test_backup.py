@@ -246,3 +246,108 @@ async def test_agents_get_backup(
         assert response["result"]["agent_errors"] == {}
         assert response["result"]["backup"] == expected_result
         assert subprocess_exec.called
+
+
+async def test_agents_delete(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test agent delete backup."""
+
+    flattened_metadata = json.dumps(flatten(TEST_AGENT_BACKUP.as_dict())).encode(
+        "utf-8"
+    )
+    responses = iter(
+        [
+            b'{"kind":"OBJ","created":"2025-02-09 20:02:19","size":12,"key":"backup.tar"}',
+            flattened_metadata,
+            b"",
+        ]
+    )
+    with mock_asyncio_subprocess_run(responses=responses) as subprocess_exec:
+        client = await hass_ws_client(hass)
+        await client.send_json_auto_id(
+            {
+                "type": "backup/delete",
+                "backup_id": TEST_AGENT_BACKUP.backup_id,
+            }
+        )
+        response = await client.receive_json()
+
+        assert response["success"]
+        assert response["result"] == {"agent_errors": {}}
+
+        assert [mock_call.args for mock_call in subprocess_exec.mock_calls] == snapshot
+
+
+async def test_agents_delete_fail(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test agent delete backup fails."""
+    flattened_metadata = json.dumps(flatten(TEST_AGENT_BACKUP.as_dict())).encode(
+        "utf-8"
+    )
+    responses = iter(
+        [
+            b'{"kind":"OBJ","created":"2025-02-09 20:02:19","size":12,"key":"backup.tar"}',
+            flattened_metadata,
+            b"",
+        ]
+    )
+
+    with mock_asyncio_subprocess_run(
+        responses=responses, returncode=iter([0, 1])
+    ) as subprocess_exec:
+        client = await hass_ws_client(hass)
+        await client.send_json_auto_id(
+            {
+                "type": "backup/delete",
+                "backup_id": TEST_AGENT_BACKUP.backup_id,
+            }
+        )
+        response = await client.receive_json()
+
+        assert response["success"]
+        assert response["result"] == {
+            "agent_errors": {
+                TEST_AGENT_ID: f"Failed to delete backup {TEST_AGENT_BACKUP.backup_id}: Unable to delete backup"
+            }
+        }
+        assert [mock_call.args for mock_call in subprocess_exec.mock_calls] == snapshot
+
+
+async def test_agents_delete_not_found(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test agent delete backup not found."""
+    responses = iter(
+        [
+            b'{"kind":"OBJ","created":"2025-02-09 20:02:19","size":12,"key":"backup.tar"}',
+            b"{}",
+            b"",
+        ]
+    )
+
+    with mock_asyncio_subprocess_run(
+        responses=responses, returncode=iter([0, 0])
+    ) as subprocess_exec:
+
+        client = await hass_ws_client(hass)
+        backup_id = "1234"
+
+        await client.send_json_auto_id(
+            {
+                "type": "backup/delete",
+                "backup_id": backup_id,
+            }
+        )
+        response = await client.receive_json()
+
+        assert response["success"]
+        assert response["result"] == {"agent_errors": {}}
+        assert [mock_call.args for mock_call in subprocess_exec.mock_calls] == snapshot
