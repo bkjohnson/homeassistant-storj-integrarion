@@ -34,6 +34,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     if not await client.authenticate(data[CONF_ACCESS_GRANT]):
         raise InvalidAuth
+    elif not await client.satelitte_is_live():
+        raise CannotConnect("Satelitte is not reachable")
 
     # Return info that you want to store in the config entry.
     return {"title": "Storj"}

@@ -11,7 +11,6 @@ from homeassistant.components.backup import AgentBackup, suggested_filename
 from homeassistant.exceptions import HomeAssistantError
 
 from json_flatten import flatten, unflatten
-from .exceptions import CannotConnect
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +26,6 @@ class StorjClient:
         """Initialize."""
         self._ha_instance_id = ha_instance_id
         self.bucket_name = bucket_name
-        # self.satellite = satellite
 
     async def authenticate(self, access_grant: str) -> bool:
         """Test if we can authenticate with the host."""
@@ -36,13 +34,9 @@ class StorjClient:
         )
         await result.communicate()
 
-        is_live = await self._satelitte_is_live()
-        if not is_live:
-            raise CannotConnect("Satelitte is not reachable")
-
         return result.returncode == 0
 
-    async def _satelitte_is_live(self) -> bool:
+    async def satelitte_is_live(self) -> bool:
         """Check to see if the satellite contained in the access grant is reachable."""
 
         result = await asyncio.create_subprocess_exec(
