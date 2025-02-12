@@ -151,10 +151,9 @@ async def test_form_cannot_connect(
     # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so
     # we can show the config flow is able to recover from an error.
 
+    responses = iter([b"", json.dumps(access_json).encode("utf-8")])
     with (
-        patch(
-            "custom_components.storj.api.StorjClient.authenticate", return_value=True
-        ),
+        mock_asyncio_subprocess_run(responses=responses),
         patch(
             "custom_components.storj.api.async_ping",
             return_value=AsyncMock(is_alive=True),
