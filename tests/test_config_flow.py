@@ -175,3 +175,33 @@ async def test_form_cannot_connect(
         CONF_BUCKET_NAME: "my-backups",
     }
     assert len(mock_setup_entry.mock_calls) == 1
+
+
+async def test_form_unknown_error(
+    hass: HomeAssistant,
+    access_json: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    snapshot: SnapshotAssertion,
+) -> None:
+    """Test we handle unknown error."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    with (
+        patch(
+            "custom_components.storj.api.StorjClient.authenticate",
+            side_effect=Exception,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_ACCESS_GRANT: "abc123xyz",
+                CONF_BUCKET_NAME: "my-backups",
+            },
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unknown"

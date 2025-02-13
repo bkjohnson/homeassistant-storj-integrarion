@@ -61,6 +61,7 @@ class StorjConfigFlow(ConfigFlow, domain=DOMAIN):
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
+                return self.async_abort(reason="unknown")
             else:
                 await self.async_set_unique_id(user_input[CONF_ACCESS_GRANT])
                 return self.async_create_entry(title=info["title"], data=user_input)

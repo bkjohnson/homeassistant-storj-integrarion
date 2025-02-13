@@ -15,7 +15,8 @@
       "cannot_connect": "Unable to connect to the Storj satellite."
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
+      "single_instance_allowed": "Only a single instance is allowed.",
+      "unknown": "An unknown error was encountered. The logs may contain more information."
     }
   },
   "options": {
